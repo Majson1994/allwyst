@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Podgląd opisu')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('listing')}"></header>
+<main class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${item.title}">Tytuł</h1>
+            <p class="muted" th:text="${@fmt.money(item.price)} + ' · ' + ${item.quantity} + ' szt.'"></p>
+        </div>
+        <a class="btn ghost" th:href="@{/listing/{id}(id=${item.job.id})}">← Wróć do formularza</a>
+    </div>
+    <div class="thumbs" th:unless="${item.product.images.isEmpty()}">
+        <img th:each="img : ${item.product.images}" th:src="${img}" alt="" loading="lazy">
+    </div>
+    <article class="card allegro-desc" th:utext="${previewHtml}"></article>
+
+    <details class="card" th:if="${item.lastRequest}">
+        <summary>Ostatnie żądanie wysłane do Allegro (JSON)</summary>
+        <pre class="json" th:text="${item.lastRequest}"></pre>
+    </details>
+</main>
+</body>
+</html>

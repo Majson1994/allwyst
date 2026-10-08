@@ -1,0 +1,66 @@
+server:
+  port: ${PORT:8080}
+  tomcat:
+    # formularz wystawiania wysyła wiele pól (ok. 16 na produkt)
+    max-parameter-count: 100000
+    max-part-count: 100
+
+spring:
+  application:
+    name: allegro-lister
+  datasource:
+    url: ${DB_URL:jdbc:h2:file:./data/allegrolister;AUTO_SERVER=TRUE}
+    username: ${DB_USER:sa}
+    password: ${DB_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: true
+    properties:
+      hibernate:
+        default_batch_fetch_size: 50
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  thymeleaf:
+    cache: true
+
+app:
+  # publiczny adres aplikacji - z niego powstaje redirect URI: {base-url}/allegro/callback
+  base-url: ${APP_BASE_URL:http://localhost:8080}
+  # klucz szyfrowania tokenów OAuth w bazie - USTAW WŁASNY
+  encryption-key: ${APP_ENCRYPTION_KEY:zmien-ten-klucz-na-produkcji}
+  # przykładowe produkty przy pierwszym uruchomieniu
+  seed-sample-data: true
+  basic-auth:
+    username: ${APP_USER:admin}
+    # puste = panel bez logowania (tylko do pracy lokalnej!)
+    password: ${APP_PASSWORD:}
+  allegro:
+    user-agent: AllegroLister/1.0
+    production:
+      client-id: ${ALLEGRO_CLIENT_ID:}
+      client-secret: ${ALLEGRO_CLIENT_SECRET:}
+    sandbox:
+      client-id: ${ALLEGRO_SANDBOX_CLIENT_ID:}
+      client-secret: ${ALLEGRO_SANDBOX_CLIENT_SECRET:}
+  sync:
+    enabled: true
+    interval-ms: 900000        # co 15 minut
+    initial-delay-ms: 120000   # pierwsza synchronizacja 2 min po starcie
+
+logging:
+  level:
+    pl.allegrolister: INFO
+
+---
+# Uruchom z --spring.profiles.active=postgres, żeby użyć PostgreSQL zamiast H2
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/allegrolister}
+    username: ${DB_USER:allegro}
+    password: ${DB_PASSWORD:allegro}

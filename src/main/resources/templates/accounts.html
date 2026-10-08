@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Konta Allegro')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('accounts')}"></header>
+<main class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <div class="page-head">
+        <h1>Konta Allegro</h1>
+        <div class="actions">
+            <a class="btn primary" th:href="@{/accounts/connect(env='PRODUCTION')}" th:classappend="${!productionConfigured} ? 'disabled'">Połącz konto (produkcja)</a>
+            <a class="btn" th:href="@{/accounts/connect(env='SANDBOX')}" th:classappend="${!sandboxConfigured} ? 'disabled'">Połącz konto (sandbox)</a>
+        </div>
+    </div>
+
+    <div class="alert warn" th:if="${!productionConfigured and !sandboxConfigured}">
+        Nie skonfigurowano aplikacji Allegro. Zarejestruj ją na
+        <a href="https://apps.developer.allegro.pl" target="_blank" rel="noopener">apps.developer.allegro.pl</a>
+        (sandbox: <a href="https://apps.developer.allegro.pl.allegrosandbox.pl" target="_blank" rel="noopener">apps.developer.allegro.pl.allegrosandbox.pl</a>),
+        wybierz typ „aplikacja z dostępem do przeglądarki" i ustaw adres przekierowania podany niżej.
+    </div>
+    <p class="muted small">Adres przekierowania (redirect URI) do wpisania w ustawieniach aplikacji Allegro:
+        <code th:text="${redirectUri}">http://localhost:8080/allegro/callback</code></p>
+
+    <table class="table" th:unless="${accounts.isEmpty()}">
+        <thead>
+        <tr><th>Konto</th><th>Środowisko</th><th>Połączono</th><th>Token do</th><th>Synchronizacja</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="a : ${accounts}" th:classappend="${!a.active} ? 'dim'">
+            <td><b th:text="${a.login}">login</b><div class="muted small" th:text="'ID ' + ${a.sellerId}"></div></td>
+            <td th:text="${a.environment.label}"></td>
+            <td th:text="${@fmt.dt(a.connectedAt)}"></td>
+            <td th:text="${@fmt.dt(a.tokenExpiresAt)}"></td>
+            <td>
+                <span class="badge ok" th:if="${a.settings.anySyncEnabled}">włączona</span>
+                <span class="badge" th:unless="${a.settings.anySyncEnabled}">wyłączona</span>
+            </td>
+            <td class="row-actions">
+                <a class="btn small" th:href="@{/accounts/{id}/settings(id=${a.id})}">Ustawienia</a>
+                <a class="btn small" th:href="@{/accounts/connect(env=${a.environment})}">Autoryzuj ponownie</a>
+                <form method="post" th:action="@{/accounts/{id}/active(id=${a.id})}" class="inline">
+                    <input type="hidden" name="active" th:value="${!a.active}">
+                    <button class="btn small ghost" th:text="${a.active} ? 'Wyłącz' : 'Włącz'">Wyłącz</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <p class="muted" th:if="${accounts.isEmpty()}">Nie połączono jeszcze żadnego konta.</p>
+</main>
+</body>
+</html>

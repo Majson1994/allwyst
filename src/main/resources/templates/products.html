@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Magazyn')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('products')}"></header>
+<main class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <div class="page-head">
+        <h1>Magazyn <span class="muted" th:text="'(' + ${page.totalElements} + ')'"></span></h1>
+        <div class="actions">
+            <a class="btn" th:href="@{/products/new}">Dodaj produkt</a>
+        </div>
+    </div>
+
+    <form method="get" th:action="@{/products}" class="filters">
+        <input type="search" name="q" th:value="${q}" placeholder="Szukaj: nazwa, SKU, EAN">
+        <select name="cat">
+            <option value="">Wszystkie kategorie</option>
+            <option th:each="c : ${categories}" th:value="${c}" th:text="${c}" th:selected="${c == cat}"></option>
+        </select>
+        <select name="size">
+            <option th:each="n : ${ {50, 100, 250, 500} }" th:value="${n}" th:text="${n} + ' / str.'" th:selected="${n == size}"></option>
+        </select>
+        <button class="btn">Filtruj</button>
+    </form>
+
+    <form method="post" th:action="@{/products/list-selected}" id="products-form">
+        <div class="toolbar">
+            <span class="muted">Zaznaczone produkty:</span>
+            <select name="accountId" required>
+                <option th:if="${allAccounts.isEmpty()}" value="">— najpierw połącz konto —</option>
+                <option th:each="a : ${allAccounts}" th:value="${a.id}" th:text="${a.displayName}"></option>
+            </select>
+            <button class="btn primary" th:disabled="${allAccounts.isEmpty()}">Wystaw zaznaczone (formularz)</button>
+        </div>
+
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th class="w-check"><input type="checkbox" data-check-all="productIds" aria-label="Zaznacz wszystkie"></th>
+                    <th></th>
+                    <th>Nazwa</th>
+                    <th>SKU</th>
+                    <th>EAN</th>
+                    <th>Kategoria</th>
+                    <th class="num">Cena</th>
+                    <th class="num">Stan</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="p : ${page.content}">
+                    <td><input type="checkbox" name="productIds" th:value="${p.id}"></td>
+                    <td><img class="thumb" th:if="${p.mainImage}" th:src="${p.mainImage}" alt="" loading="lazy"></td>
+                    <td>
+                        <a th:href="@{/products/{id}(id=${p.id})}" th:text="${p.name}">nazwa</a>
+                        <div class="muted small" th:if="${p.manufacturer}" th:text="${p.manufacturer}"></div>
+                    </td>
+                    <td th:text="${p.sku}"></td>
+                    <td th:text="${p.ean}"></td>
+                    <td class="small" th:text="${p.shopCategory}"></td>
+                    <td class="num" th:text="${@fmt.money(p.price)}"></td>
+                    <td class="num" th:text="${p.quantity}" th:classappend="${p.quantity == 0} ? 'err-text'"></td>
+                </tr>
+                <tr th:if="${page.content.isEmpty()}">
+                    <td colspan="8" class="muted">Brak produktów. Dodaj produkt albo zaimportuj CSV.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </form>
+
+    <nav class="pager" th:if="${page.totalPages > 1}">
+        <a class="btn small" th:if="${page.hasPrevious()}" th:href="@{/products(q=${q},cat=${cat},size=${size},page=${page.number - 1})}">← Poprzednia</a>
+        <span class="muted" th:text="'Strona ' + ${page.number + 1} + ' z ' + ${page.totalPages}"></span>
+        <a class="btn small" th:if="${page.hasNext()}" th:href="@{/products(q=${q},cat=${cat},size=${size},page=${page.number + 1})}">Następna →</a>
+    </nav>
+
+    <section class="card">
+        <h2>Import CSV</h2>
+        <p class="muted small">Kolumny: <code>sku;ean;nazwa;producent;cena;ilosc;vat;waga;kategoria;zdjecia;opis;cechy;kategoria_allegro;bezpieczenstwo</code>.
+            Zdjęcia rozdzielaj znakiem <code>|</code>, cechy zapisuj jako <code>Kolor=czerwony|Materiał=bawełna</code>.
+            Istniejące SKU są aktualizowane. <a th:href="@{/products/sample.csv}">Pobierz przykładowy plik</a>.</p>
+        <form method="post" th:action="@{/products/import}" enctype="multipart/form-data" class="toolbar">
+            <input type="file" name="file" accept=".csv,text/csv" required>
+            <button class="btn">Importuj</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

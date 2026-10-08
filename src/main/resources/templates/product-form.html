@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${product.id == null ? 'Nowy produkt' : product.name})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('products')}"></header>
+<main class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <div class="page-head">
+        <h1 th:text="${product.id == null} ? 'Nowy produkt' : ${product.name}">Produkt</h1>
+        <div class="actions" th:if="${product.id != null}">
+            <form method="post" th:action="@{/products/{id}/delete(id=${product.id})}" class="inline">
+                <button class="btn danger" data-confirm="Usunąć produkt z magazynu?">Usuń</button>
+            </form>
+        </div>
+    </div>
+
+    <form method="post" th:action="@{/products/save}">
+        <input type="hidden" name="id" th:value="${product.id}">
+        <section class="card">
+            <div class="grid">
+                <label>SKU (sygnatura) *<input name="sku" th:value="${product.sku}" required></label>
+                <label>EAN / GTIN<input name="ean" th:value="${product.ean}" inputmode="numeric"></label>
+                <label class="span2">Nazwa *<input name="name" th:value="${product.name}" required></label>
+                <label>Producent / marka<input name="manufacturer" th:value="${product.manufacturer}"></label>
+                <label>Kategoria w sklepie<input name="shopCategory" th:value="${product.shopCategory}" placeholder="np. Kuchnia/Kubki"></label>
+                <label>Cena (zł)<input name="price" th:value="${product.price}" inputmode="decimal"></label>
+                <label>Stan (szt.)<input name="quantity" th:value="${product.quantity}" inputmode="numeric"></label>
+                <label>VAT (%)<input name="vatRate" th:value="${product.vatRate}" inputmode="numeric"></label>
+                <label>Waga (kg)<input name="weight" th:value="${product.weight}" inputmode="decimal"></label>
+                <label class="span2">ID kategorii Allegro (nadpisuje powiązanie kategorii)
+                    <input name="allegroCategoryId" th:value="${product.allegroCategoryId}" placeholder="puste = z powiązań">
+                </label>
+            </div>
+        </section>
+        <section class="card">
+            <h2>Opis</h2>
+            <p class="muted small">HTML albo zwykły tekst. Przy wystawianiu zostanie oczyszczony do formatu Allegro (nagłówki, akapity, listy, pogrubienia).</p>
+            <textarea name="description" rows="10" th:text="${product.description}"></textarea>
+        </section>
+        <section class="card">
+            <div class="grid">
+                <label class="span2">Zdjęcia (adresy URL, po jednym w linii; pierwsze = główne)
+                    <textarea name="imagesText" rows="5" th:text="${imagesText}"></textarea>
+                </label>
+                <label class="span2">Cechy (Nazwa=Wartość, po jednej w linii) - źródło parametrów Allegro
+                    <textarea name="featuresText" rows="6" th:text="${featuresText}" placeholder="Kolor=czerwony&#10;Materiał=ceramika"></textarea>
+                </label>
+                <label class="span2">Informacje o bezpieczeństwie (GPSR)
+                    <textarea name="safetyInfo" rows="3" th:text="${product.safetyInfo}"></textarea>
+                </label>
+            </div>
+            <div class="thumbs" th:unless="${product.images.isEmpty()}">
+                <img th:each="img : ${product.images}" th:src="${img}" alt="" loading="lazy">
+            </div>
+        </section>
+        <div class="actions sticky-actions">
+            <a class="btn ghost" th:href="@{/products}">Wróć</a>
+            <button class="btn primary">Zapisz</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

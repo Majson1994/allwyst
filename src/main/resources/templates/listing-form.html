@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Formularz wystawiania')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('listing')}"></header>
+<main class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${job.name}">Formularz wystawiania</h1>
+            <p class="muted">Konto: <b th:text="${job.account.displayName}"></b> · pozycji: <span th:text="${items.size()}"></span></p>
+        </div>
+        <div class="badges">
+            <span th:each="c : ${counts}" class="badge" th:classappend="${@fmt.statusClass(c.key)}"
+                  th:text="${c.key.label} + ': ' + ${c.value}"></span>
+        </div>
+    </div>
+
+    <div class="alert warn" th:unless="${dicts.errors.isEmpty()}">
+        Nie udało się pobrać części danych z Allegro: <span th:text="${#strings.listJoin(dicts.errors, '; ')}"></span>
+    </div>
+
+    <form id="listing-form" method="post" th:action="@{/listing/{id}(id=${job.id})}" th:data-job="${job.id}">
+        <section class="card bulk">
+            <h2>Operacje grupowe</h2>
+            <p class="muted small">Dotyczą zaznaczonych pozycji, a gdy nic nie zaznaczysz - wszystkich, które czekają na wystawienie.</p>
+            <div class="bulk-row">
+                <select name="bulkField" id="bulk-field" aria-label="Operacja grupowa">
+                    <option value="">— wybierz operację —</option>
+                    <option value="category">Ustaw kategorię</option>
+                    <option value="template">Ustaw szablon opisu</option>
+                    <option value="shippingRate">Ustaw cennik dostawy</option>
+                    <option value="returnPolicy">Ustaw warunki zwrotów</option>
+                    <option value="impliedWarranty">Ustaw warunki reklamacji</option>
+                    <option value="warranty">Ustaw gwarancję</option>
+                    <option value="responsibleProducer">Ustaw producenta odpowiedzialnego</option>
+                    <option value="responsiblePerson">Ustaw osobę odpowiedzialną</option>
+                    <option value="listingMode">Ustaw tryb wystawiania</option>
+                    <option value="quantity">Ustaw ilość</option>
+                    <option value="pricePercent">Zmień cenę o % (np. 10 albo -5)</option>
+                    <option value="priceFromProduct">Ustaw cenę z magazynu</option>
+                    <option value="titlePrefix">Dodaj tekst na początku tytułu</option>
+                    <option value="titleSuffix">Dodaj tekst na końcu tytułu</option>
+                    <option value="titleFromProduct">Ustaw tytuł z nazwy produktu</option>
+                </select>
+
+                <span class="bulk-input" data-bulk-for="category" hidden>
+                    <span class="cat-picker" th:data-account="${job.account.id}">
+                        <input class="cat-id" name="bulkValue" disabled placeholder="ID kategorii">
+                        <input class="cat-name" name="bulkLabel" disabled readonly placeholder="nie wybrano">
+                        <button type="button" class="btn small" data-cat-browse>Wybierz</button>
+                    </span>
+                </span>
+                <span class="bulk-input" data-bulk-for="template" hidden>
+                    <select name="bulkValue" disabled>
+                        <option value="">— bez szablonu —</option>
+                        <option th:each="t : ${templates}" th:value="${t.id}" th:text="${t.name}"></option>
+                    </select>
+                </span>
+                <span class="bulk-input" data-bulk-for="shippingRate" hidden>
+                    <select name="bulkValue" disabled>
+                        <option value="">— domyślny —</option>
+                        <option th:each="r : ${dicts.shippingRates}" th:value="${r.id()}" th:text="${r.name()}"></option>
+                    </select>
+                </span>
+                <span class="bulk-input" data-bulk-for="returnPolicy" hidden>
+                    <select name="bulkValue" disabled>
+                        <option th:each="r : ${dicts.returnPolicies}" th:value="${r.id()}" th:text="${r.name()}"></option>
+                    </select>
+                </span>
+                <span class="bulk-input" data-bulk-for="impliedWarranty" hidden>
+                    <select name="bulkValue" disabled>
+                        <option th:each="r : ${dicts.impliedWarranties}" th:value="${r.id()}" th:text="${r.name()}"></option>
+                    </select>
+                </span>
+                <span class="bulk-input" data-bulk-for="warranty" hidden>
+                    <select name="bulkValue" disabled>
+                        <option value="">— brak —</option>
+                        <option th:each="r : ${dicts.warranties}" th:value="${r.id()}" th:text="${r.name()}"></option>
+                    </select>
+                </span>
+                <span class="bulk-input" data-bulk-for="responsibleProducer" hidden>
+                    <select name="bulkValue" disabled>
+                        <option value="">— nie ustawiaj —</option>
+                        <option th:each="r : ${dicts.responsibleProducers}" th:value="${r.id()}" th:text="${r.name()}"></option>
+                    </select>
+                </span>
+                <span class="bulk-input" data-bulk-for="responsiblePerson" hidden>
+                    <select name="bulkValue" disabled>
+                        <option value="">— nie ustawiaj —</option>
+                        <option th:each="r : ${dicts.responsiblePersons}" th:value="${r.id()}" th:text="${r.name()}"></option>
+                    </select>
+                </span>
+                <span class="bulk-input" data-bulk-for="listingMode" hidden>
+                    <select name="bulkValue" disabled>
+                        <option th:each="m : ${listingModes}" th:value="${m}" th:text="${m.label}"></option>
+                    </select>
+                </span>
+                <span class="bulk-input" data-bulk-for="quantity pricePercent titlePrefix titleSuffix" hidden>
+                    <input name="bulkValue" disabled placeholder="wartość">
+                </span>
+                <button class="btn" name="action" value="bulk">Zastosuj</button>
+            </div>
+            <div class="actions">
+                <button class="btn" name="action" value="save">Zapisz zmiany</button>
+                <button class="btn" name="action" value="match">Dopasuj kategorie przez Allegro</button>
+                <button class="btn" name="action" value="validate">Sprawdź przed wystawieniem</button>
+                <button class="btn primary" name="action" value="publish" data-confirm="Wystawić pozycje na Allegro?">Wystaw na Allegro</button>
+            </div>
+        </section>
+
+        <label class="check-all"><input type="checkbox" data-check-all="selectedIds"> zaznacz wszystkie</label>
+
+        <article class="card item" th:each="it, st : ${items}"
+                 th:with="p=${it.product}, editable=${it.status.name() == 'DRAFT' or it.status.name() == 'ERROR'}">
+            <input type="hidden" th:name="|items[${st.index}].id|" th:value="${it.id}">
+            <div class="item-head">
+                <input type="checkbox" name="selectedIds" th:value="${it.id}" aria-label="Zaznacz">
+                <img class="thumb" th:if="${p.mainImage}" th:src="${p.mainImage}" alt="" loading="lazy">
+                <div class="item-title">
+                    <strong th:text="${p.name}">Produkt</strong>
+                    <div class="muted small">
+                        SKU <span th:text="${p.sku}"></span> · EAN <span th:text="${p.ean ?: '—'}"></span>
+                        · stan <span th:text="${p.quantity}"></span> · cena w magazynie <span th:text="${@fmt.money(p.price)}"></span>
+                    </div>
+                </div>
+                <span class="badge" th:attr="data-status-for=${it.id}" th:classappend="${@fmt.statusClass(it.status)}"
+                      th:text="${it.status.label}">Status</span>
+            </div>
+
+            <div class="item-msg" th:attr="data-message-for=${it.id}" th:classappend="${it.status.name() == 'ERROR'} ? 'err-text'"
+                 th:text="${it.message}"></div>
+            <div class="warn-text small" th:if="${it.warnings}" th:text="'⚠ ' + ${it.warnings}"></div>
+            <a class="small offer-link" th:attr="data-offer-for=${it.id}" th:if="${it.offerId}" target="_blank" rel="noopener"
+               th:href="${job.account.environment.offerUrl(it.offerId)}" th:text="'Oferta ' + ${it.offerId} + ' ↗'"></a>
+
+            <fieldset class="grid" th:disabled="${!editable}">
+                <label class="span2">Tytuł <span class="counter" th:text="${it.titleLength} + '/75'">0/75</span>
+                    <input class="title-input" th:name="|items[${st.index}].title|" th:value="${it.title}" maxlength="150">
+                </label>
+                <label class="span2">Kategoria Allegro
+                    <span class="cat-picker" th:data-account="${job.account.id}" th:data-name="${p.name}">
+                        <input class="cat-id" th:name="|items[${st.index}].categoryId|" th:value="${it.categoryId}" placeholder="ID">
+                        <input class="cat-name" th:name="|items[${st.index}].categoryName|" th:value="${it.categoryName}" readonly placeholder="nie wybrano">
+                        <button type="button" class="btn small" data-cat-browse>Wybierz</button>
+                        <button type="button" class="btn small" data-cat-match>Dopasuj</button>
+                    </span>
+                </label>
+                <label>Tryb wystawiania
+                    <select th:name="|items[${st.index}].listingMode|">
+                        <option th:each="m : ${listingModes}" th:value="${m}" th:text="${m.label}" th:selected="${m == it.listingMode}"></option>
+                    </select>
+                </label>
+                <label>ID produktu w katalogu Allegro
+                    <input th:name="|items[${st.index}].allegroProductId|" th:value="${it.allegroProductId}" placeholder="opcjonalnie (UUID)">
+                </label>
+                <label>Cena (zł)
+                    <input th:name="|items[${st.index}].price|" th:value="${it.price}" inputmode="decimal">
+                </label>
+                <label>Ilość
+                    <input th:name="|items[${st.index}].quantity|" th:value="${it.quantity}" inputmode="numeric">
+                </label>
+                <label>Szablon opisu
+                    <select th:name="|items[${st.index}].templateId|">
+                        <option value="">— bez szablonu (sam opis) —</option>
+                        <option th:each="t : ${templates}" th:value="${t.id}" th:text="${t.name}" th:selected="${t.id == it.templateId}"></option>
+                    </select>
+                </label>
+                <label>Cennik dostawy
+                    <select th:name="|items[${st.index}].shippingRateId|">
+                        <option value="">— domyślny Allegro —</option>
+                        <option th:each="r : ${dicts.shippingRates}" th:value="${r.id()}" th:text="${r.name()}" th:selected="${r.id() == it.shippingRateId}"></option>
+                    </select>
+                </label>
+                <label>Warunki zwrotów
+                    <select th:name="|items[${st.index}].returnPolicyId|">
+                        <option value="">— domyślne —</option>
+                        <option th:each="r : ${dicts.returnPolicies}" th:value="${r.id()}" th:text="${r.name()}" th:selected="${r.id() == it.returnPolicyId}"></option>
+                    </select>
+                </label>
+                <label>Warunki reklamacji
+                    <select th:name="|items[${st.index}].impliedWarrantyId|">
+                        <option value="">— domyślne —</option>
+                        <option th:each="r : ${dicts.impliedWarranties}" th:value="${r.id()}" th:text="${r.name()}" th:selected="${r.id() == it.impliedWarrantyId}"></option>
+                    </select>
+                </label>
+                <label>Gwarancja
+                    <select th:name="|items[${st.index}].warrantyId|">
+                        <option value="">— brak —</option>
+                        <option th:each="r : ${dicts.warranties}" th:value="${r.id()}" th:text="${r.name()}" th:selected="${r.id() == it.warrantyId}"></option>
+                    </select>
+                </label>
+                <label>Producent odpowiedzialny
+                    <select th:name="|items[${st.index}].responsibleProducerId|">
+                        <option value="">— nie ustawiaj —</option>
+                        <option th:each="r : ${dicts.responsibleProducers}" th:value="${r.id()}" th:text="${r.name()}" th:selected="${r.id() == it.responsibleProducerId}"></option>
+                    </select>
+                </label>
+                <label>Osoba odpowiedzialna
+                    <select th:name="|items[${st.index}].responsiblePersonId|">
+                        <option value="">— nie ustawiaj —</option>
+                        <option th:each="r : ${dicts.responsiblePersons}" th:value="${r.id()}" th:text="${r.name()}" th:selected="${r.id() == it.responsiblePersonId}"></option>
+                    </select>
+                </label>
+            </fieldset>
+
+            <div class="item-actions">
+                <a class="btn small" th:if="${it.categoryId}" th:href="@{/listing/item/{id}/parameters(id=${it.id})}">Parametry</a>
+                <a class="btn small" th:href="@{/listing/item/{id}/preview(id=${it.id})}">Podgląd opisu</a>
+                <button class="btn small danger" type="submit" th:if="${editable}" formnovalidate
+                        th:formaction="@{/listing/item/{id}/remove(id=${it.id})}" data-confirm="Usunąć pozycję z formularza?">Usuń z formularza</button>
+            </div>
+        </article>
+
+        <div class="actions sticky-actions">
+            <button class="btn" name="action" value="save">Zapisz zmiany</button>
+            <button class="btn" name="action" value="validate">Sprawdź</button>
+            <button class="btn primary" name="action" value="publish" data-confirm="Wystawić pozycje na Allegro?">Wystaw na Allegro</button>
+        </div>
+    </form>
+</main>
+<div th:replace="~{fragments/layout :: catModal}"></div>
+</body>
+</html>

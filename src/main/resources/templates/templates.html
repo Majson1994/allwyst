@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Szablony opisów')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('templates')}"></header>
+<main class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <div class="page-head">
+        <h1>Szablony opisów</h1>
+        <div class="actions"><a class="btn primary" th:href="@{/templates/new}">Nowy szablon</a></div>
+    </div>
+    <table class="table">
+        <thead><tr><th>Nazwa</th><th>Sekcje</th><th>Zmieniono</th><th></th></tr></thead>
+        <tbody>
+        <tr th:each="t : ${templates}">
+            <td><a th:href="@{/templates/{id}(id=${t.id})}" th:text="${t.name}"></a></td>
+            <td th:text="${t.sections.size()}"></td>
+            <td th:text="${@fmt.dt(t.updatedAt)}"></td>
+            <td class="row-actions">
+                <a class="btn small" th:href="@{/templates/{id}/preview(id=${t.id})}">Podgląd</a>
+                <form method="post" th:action="@{/templates/{id}/copy(id=${t.id})}" class="inline"><button class="btn small ghost">Kopiuj</button></form>
+                <form method="post" th:action="@{/templates/{id}/delete(id=${t.id})}" class="inline">
+                    <button class="btn small danger" data-confirm="Usunąć szablon?">Usuń</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

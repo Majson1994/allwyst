@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Kategorie i parametry')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('mappings')}"></header>
+<main class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <div class="page-head">
+        <h1>Kategorie i parametry</h1>
+        <label class="inline-label" th:unless="${allAccounts.isEmpty()}">Konto do przeglądania kategorii
+            <select id="picker-account">
+                <option th:each="a : ${allAccounts}" th:value="${a.id}" th:text="${a.displayName}"></option>
+            </select>
+        </label>
+    </div>
+    <div class="alert warn" th:if="${allAccounts.isEmpty()}">Połącz konto Allegro, żeby przeglądać kategorie.</div>
+
+    <section class="card">
+        <h2>Powiązania kategorii (sklep → Allegro)</h2>
+        <p class="muted small">Produkty z daną kategorią w magazynie dostaną w formularzu wystawiania wskazaną kategorię Allegro
+            i (opcjonalnie) szablon. Kolejność: kategoria Allegro ustawiona w produkcie → powiązanie → domyślna z konta → automatyczne dopasowanie.</p>
+        <table class="table" th:unless="${mappings.isEmpty()}">
+            <thead><tr><th>Kategoria w sklepie</th><th>Kategoria Allegro</th><th>Szablon</th><th></th></tr></thead>
+            <tbody>
+            <tr th:each="m : ${mappings}">
+                <td th:text="${m.shopCategory}"></td>
+                <td><span th:text="${m.allegroCategoryName ?: m.allegroCategoryId}"></span> <span class="muted small" th:text="'#' + ${m.allegroCategoryId}"></span></td>
+                <td th:text="${m.templateId}"></td>
+                <td class="row-actions">
+                    <a class="btn small" th:href="@{/mappings(editMapping=${m.id})}">Edytuj</a>
+                    <form method="post" th:action="@{/mappings/category/{id}/delete(id=${m.id})}" class="inline">
+                        <button class="btn small danger" data-confirm="Usunąć powiązanie?">Usuń</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <form method="post" th:action="@{/mappings/category/save}" class="sub-form">
+            <input type="hidden" name="id" th:value="${mapping.id}">
+            <div class="grid">
+                <label>Kategoria w sklepie
+                    <input name="shopCategory" th:value="${mapping.shopCategory}" list="shop-categories" required>
+                    <datalist id="shop-categories"><option th:each="c : ${shopCategories}" th:value="${c}"></option></datalist>
+                </label>
+                <label>Szablon (opcjonalnie)
+                    <select name="templateId">
+                        <option value="">— domyślny z konta —</option>
+                        <option th:each="t : ${templates}" th:value="${t.id}" th:text="${t.name}" th:selected="${t.id == mapping.templateId}"></option>
+                    </select>
+                </label>
+                <label class="span2">Kategoria Allegro
+                    <span class="cat-picker">
+                        <input class="cat-id" name="allegroCategoryId" th:value="${mapping.allegroCategoryId}" placeholder="ID" required>
+                        <input class="cat-name" name="allegroCategoryName" th:value="${mapping.allegroCategoryName}" readonly placeholder="nie wybrano">
+                        <button type="button" class="btn small" data-cat-browse>Wybierz</button>
+                        <button type="button" class="btn small" data-cat-match data-name-from="shopCategory">Dopasuj</button>
+                    </span>
+                </label>
+            </div>
+            <div class="actions"><button class="btn primary" th:text="${mapping.id == null} ? 'Dodaj powiązanie' : 'Zapisz powiązanie'">Dodaj</button></div>
+        </form>
+    </section>
+
+    <section class="card" id="rules">
+        <h2>Reguły parametrów</h2>
+        <p class="muted small">Bez reguł aplikacja i tak uzupełnia: EAN, cechy o tej samej nazwie co parametr, markę z producenta,
+            „Stan" = Nowy i wagę. Reguły mają pierwszeństwo (najpierw dla konkretnej kategorii, potem globalne, wg priorytetu).
+            Pola specjalne cechy: <code>@ean @sku @producent @nazwa @waga @kategoria</code>.</p>
+        <div class="table-wrap" th:unless="${rules.isEmpty()}">
+            <table class="table">
+                <thead><tr><th>#</th><th>Parametr</th><th>Kategoria</th><th>Reguła</th><th>Priorytet</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="r : ${rules}" th:classappend="${!r.enabled} ? 'dim'">
+                    <td th:text="${r.id}"></td>
+                    <td><b th:text="${r.parameterName ?: ('#' + r.parameterId)}"></b></td>
+                    <td th:text="${r.allegroCategoryId ?: 'wszystkie'}"></td>
+                    <td class="small">
+                        <span th:switch="${r.ruleType.name()}">
+                            <span th:case="'FROM_FEATURE'" th:text="'z cechy „' + ${r.featureName} + '”'"></span>
+                            <span th:case="'CONSTANT'" th:text="'= „' + ${r.value} + '”'"></span>
+                            <span th:case="*" th:text="'= „' + ${r.value} + '” gdy ' + ${r.matchField?.label} + ' zawiera „' + ${r.phrase} + '”'"></span>
+                        </span>
+                        <div class="muted" th:if="${r.valueMap}" th:text="'mapowanie: ' + ${r.valueMap}"></div>
+                    </td>
+                    <td th:text="${r.priority}"></td>
+                    <td class="row-actions">
+                        <a class="btn small" th:href="@{'/mappings?editRule=' + ${r.id} + '#rule-form'}">Edytuj</a>
+                        <form method="post" th:action="@{/mappings/rule/{id}/toggle(id=${r.id})}" class="inline">
+                            <button class="btn small ghost" th:text="${r.enabled} ? 'Wyłącz' : 'Włącz'">Wyłącz</button>
+                        </form>
+                        <form method="post" th:action="@{/mappings/rule/{id}/delete(id=${r.id})}" class="inline">
+                            <button class="btn small danger" data-confirm="Usunąć regułę?">Usuń</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <form method="post" th:action="@{/mappings/rule/save}" class="sub-form" id="rule-form">
+            <input type="hidden" name="id" th:value="${rule.id}">
+            <input type="hidden" name="parameterId" id="rule-param-id" th:value="${rule.parameterId}">
+            <input type="hidden" name="_enabled" value="on">
+            <h3 th:text="${rule.id == null} ? 'Nowa reguła' : ('Edycja reguły #' + ${rule.id})">Nowa reguła</h3>
+            <div class="grid">
+                <label>Kategoria Allegro (puste = wszystkie)
+                    <span class="cat-picker">
+                        <input class="cat-id" name="allegroCategoryId" id="rule-category" th:value="${rule.allegroCategoryId}" placeholder="ID">
+                        <input class="cat-name" readonly placeholder="wszystkie kategorie">
+                        <button type="button" class="btn small" data-cat-browse>Wybierz</button>
+                    </span>
+                </label>
+                <label>Parametr Allegro
+                    <input name="parameterName" id="rule-param-name" th:value="${rule.parameterName}" list="category-params" placeholder="np. Kolor" autocomplete="off">
+                    <datalist id="category-params"></datalist>
+                    <button type="button" class="btn small" id="load-params">Pobierz parametry kategorii</button>
+                </label>
+                <label>Typ reguły
+                    <select name="ruleType" id="rule-type">
+                        <option th:each="t : ${ruleTypes}" th:value="${t}" th:text="${t.label}" th:selected="${t == rule.ruleType}"></option>
+                    </select>
+                </label>
+                <label data-rule-for="FROM_FEATURE">Cecha produktu
+                    <input name="featureName" th:value="${rule.featureName}" placeholder="np. Kolor albo @producent">
+                </label>
+                <label data-rule-for="CONSTANT CONSTANT_IF_CONTAINS">Wartość parametru
+                    <input name="value" th:value="${rule.value}" placeholder="np. Nowy">
+                </label>
+                <label data-rule-for="CONSTANT_IF_CONTAINS">Pole produktu
+                    <select name="matchField">
+                        <option th:each="f : ${matchFields}" th:value="${f}" th:text="${f.label}" th:selected="${f == rule.matchField}"></option>
+                    </select>
+                </label>
+                <label data-rule-for="CONSTANT_IF_CONTAINS">Fraza (* = dowolny ciąg)
+                    <input name="phrase" th:value="${rule.phrase}" placeholder="np. czerw*">
+                </label>
+                <label>Priorytet (mniejszy = ważniejszy)
+                    <input name="priority" th:value="${rule.priority}" inputmode="numeric" required>
+                </label>
+                <label class="span2">Mapowanie wartości (opcjonalnie)
+                    <input name="valueMap" th:value="${rule.valueMap}" placeholder="red=czerwony;blue=niebieski">
+                </label>
+            </div>
+            <div class="checks">
+                <label><input type="checkbox" name="enabled" th:checked="${rule.enabled}"> Reguła aktywna</label>
+            </div>
+            <div class="actions">
+                <a class="btn ghost" th:if="${rule.id != null}" href="/mappings#rules">Anuluj edycję</a>
+                <button class="btn primary" th:text="${rule.id == null} ? 'Dodaj regułę' : 'Zapisz regułę'">Dodaj regułę</button>
+            </div>
+        </form>
+    </section>
+</main>
+<div th:replace="~{fragments/layout :: catModal}"></div>
+</body>
+</html>

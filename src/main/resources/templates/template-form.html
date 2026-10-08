@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Szablon opisu')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('templates')}"></header>
+<main class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <div class="page-head">
+        <h1 th:text="${template.id == null} ? 'Nowy szablon' : ${template.name}">Szablon</h1>
+        <div class="actions" th:if="${template.id != null}">
+            <form method="get" th:action="@{/templates/{id}/preview(id=${template.id})}" class="inline">
+                <select name="productId" aria-label="Produkt do podglądu">
+                    <option th:each="p : ${sampleProducts}" th:value="${p.id}" th:text="${@fmt.cut(p.name, 40)}"></option>
+                </select>
+                <button class="btn">Podgląd</button>
+            </form>
+        </div>
+    </div>
+
+    <details class="card help">
+        <summary>Dostępne tagi</summary>
+        <div class="tags">
+            <code>[nazwa]</code> nazwa produktu · <code>[nazwa_aukcji]</code> tytuł oferty · <code>[opis]</code> opis z magazynu ·
+            <code>[producent]</code> · <code>[sku]</code> · <code>[ean]</code> · <code>[cena]</code> · <code>[ilosc]</code> ·
+            <code>[waga]</code> · <code>[kategoria]</code> · <code>[cechy]</code> lista wszystkich cech ·
+            <code>[cecha:Kolor]</code> wartość jednej cechy · w polach zdjęć: <code>[zdjecie_1]</code>, <code>[zdjecie_2]</code>…
+        </div>
+        <p class="muted small">Allegro dopuszcza w opisie tylko: h1, h2, p, ul, ol, li, b. Pozostałe znaczniki są usuwane automatycznie.
+            Sekcja ma maksymalnie dwa elementy (tekst/zdjęcie). Sekcje bez treści (np. brak 3. zdjęcia) są pomijane.</p>
+    </details>
+
+    <form method="post" th:action="@{/templates/save}" id="template-form">
+        <input type="hidden" name="id" th:value="${template.id}">
+        <section class="card">
+            <label>Nazwa szablonu<input name="name" th:value="${template.name}" required></label>
+        </section>
+
+        <div id="sections">
+            <section class="card section-block" th:each="s, st : ${template.sections}">
+                <div class="section-head">
+                    <strong class="section-no" th:text="'Sekcja ' + ${st.count}">Sekcja</strong>
+                    <select class="layout-select" th:name="|sections[${st.index}].layout|">
+                        <option th:each="l : ${layouts}" th:value="${l}" th:text="${l.label}" th:selected="${l == s.layout}"></option>
+                    </select>
+                    <span class="spacer"></span>
+                    <button type="button" class="btn small ghost" data-move="up" aria-label="W górę">↑</button>
+                    <button type="button" class="btn small ghost" data-move="down" aria-label="W dół">↓</button>
+                    <button type="button" class="btn small danger" data-remove-section>Usuń</button>
+                </div>
+                <div class="grid">
+                    <label class="f-image1">Zdjęcie<input th:name="|sections[${st.index}].image1|" th:value="${s.image1}" placeholder="[zdjecie_1] albo URL"></label>
+                    <label class="f-image2">Drugie zdjęcie<input th:name="|sections[${st.index}].image2|" th:value="${s.image2}" placeholder="[zdjecie_2] albo URL"></label>
+                    <label class="span2 f-text">Tekst (HTML + tagi)<textarea rows="6" th:name="|sections[${st.index}].text|" th:text="${s.text}"></textarea></label>
+                </div>
+            </section>
+        </div>
+
+        <template id="section-template">
+            <section class="card section-block">
+                <div class="section-head">
+                    <strong class="section-no">Sekcja</strong>
+                    <select class="layout-select" name="sections[__i__].layout">
+                        <option th:each="l : ${layouts}" th:value="${l}" th:text="${l.label}"></option>
+                    </select>
+                    <span class="spacer"></span>
+                    <button type="button" class="btn small ghost" data-move="up" aria-label="W górę">↑</button>
+                    <button type="button" class="btn small ghost" data-move="down" aria-label="W dół">↓</button>
+                    <button type="button" class="btn small danger" data-remove-section>Usuń</button>
+                </div>
+                <div class="grid">
+                    <label class="f-image1">Zdjęcie<input name="sections[__i__].image1" placeholder="[zdjecie_1] albo URL"></label>
+                    <label class="f-image2">Drugie zdjęcie<input name="sections[__i__].image2" placeholder="[zdjecie_2] albo URL"></label>
+                    <label class="span2 f-text">Tekst (HTML + tagi)<textarea rows="6" name="sections[__i__].text"></textarea></label>
+                </div>
+            </section>
+        </template>
+
+        <div class="actions sticky-actions">
+            <button type="button" class="btn" id="add-section">+ Dodaj sekcję</button>
+            <span class="spacer"></span>
+            <a class="btn ghost" th:href="@{/templates}">Wróć</a>
+            <button class="btn primary">Zapisz szablon</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

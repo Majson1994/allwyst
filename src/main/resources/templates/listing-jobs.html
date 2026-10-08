@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Wystawianie')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('listing')}"></header>
+<main class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <div class="page-head">
+        <h1>Formularze wystawiania</h1>
+        <div class="actions"><a class="btn primary" th:href="@{/products}">Wybierz produkty z magazynu</a></div>
+    </div>
+    <p class="muted" th:if="${jobs.isEmpty()}">Brak formularzy. Zaznacz produkty w Magazynie i kliknij „Wystaw zaznaczone".</p>
+    <table class="table" th:unless="${jobs.isEmpty()}">
+        <thead><tr><th>Formularz</th><th>Konto</th><th>Utworzono</th><th>Pozycje</th><th>Statusy</th></tr></thead>
+        <tbody>
+        <tr th:each="j : ${jobs}">
+            <td><a th:href="@{/listing/{id}(id=${j.id})}" th:text="${j.name}"></a></td>
+            <td th:text="${j.account.displayName}"></td>
+            <td th:text="${@fmt.dt(j.createdAt)}"></td>
+            <td th:text="${j.items.size()}"></td>
+            <td class="badges">
+                <span class="badge ok" th:if="${j.count('ACTIVE') > 0}"
+                      th:text="'wystawione: ' + ${j.count('ACTIVE')}"></span>
+                <span class="badge err" th:if="${j.count('ERROR') > 0}"
+                      th:text="'błędy: ' + ${j.count('ERROR')}"></span>
+                <span class="badge" th:if="${j.count('DRAFT') > 0}"
+                      th:text="'do wystawienia: ' + ${j.count('DRAFT')}"></span>
+                <span class="badge busy" th:if="${j.count('PENDING') > 0}"
+                      th:text="'weryfikacja: ' + ${j.count('PENDING')}"></span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

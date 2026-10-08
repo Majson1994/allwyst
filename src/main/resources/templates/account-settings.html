@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Ustawienia konta')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('accounts')}"></header>
+<main class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <div class="page-head">
+        <div>
+            <h1 th:text="'Ustawienia: ' + ${account.displayName}">Ustawienia</h1>
+            <p class="muted">Domyślne wartości formularza wystawiania i synchronizacja stanów (magazyn → Allegro).</p>
+        </div>
+        <div class="actions">
+            <form method="post" th:action="@{/accounts/{id}/refresh(id=${account.id})}" class="inline">
+                <button class="btn">Odśwież dane z Allegro</button>
+            </form>
+            <form method="post" th:action="@{/accounts/{id}/sync(id=${account.id})}" class="inline">
+                <button class="btn">Synchronizuj teraz</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="alert warn" th:unless="${dicts.errors.isEmpty()}">
+        Nie udało się pobrać części ustawień z Allegro: <span th:text="${#strings.listJoin(dicts.errors, '; ')}"></span>
+    </div>
+
+    <form method="post" th:action="@{/accounts/{id}/settings(id=${account.id})}">
+        <section class="card">
+            <h2>Domyślne ustawienia ofert</h2>
+            <div class="grid">
+                <label class="span2">Domyślna kategoria (gdy produkt nie ma powiązania)
+                    <span class="cat-picker" th:data-account="${account.id}">
+                        <input class="cat-id" name="defaultCategoryId" th:value="${s.defaultCategoryId}" placeholder="ID">
+                        <input class="cat-name" name="defaultCategoryName" th:value="${s.defaultCategoryName}" readonly placeholder="nie wybrano">
+                        <button type="button" class="btn small" data-cat-browse>Wybierz</button>
+                    </span>
+                </label>
+                <label>Domyślny szablon opisu
+                    <select name="defaultTemplateId">
+                        <option value="">— bez szablonu —</option>
+                        <option th:each="t : ${templates}" th:value="${t.id}" th:text="${t.name}" th:selected="${t.id == s.defaultTemplateId}"></option>
+                    </select>
+                </label>
+                <label>Tryb wystawiania
+                    <select name="defaultListingMode">
+                        <option th:each="m : ${listingModes}" th:value="${m}" th:text="${m.label}" th:selected="${m == s.defaultListingMode}"></option>
+                    </select>
+                </label>
+                <label>Cennik dostawy
+                    <select name="shippingRateId">
+                        <option value="">— domyślny Allegro —</option>
+                        <option th:each="r : ${dicts.shippingRates}" th:value="${r.id()}" th:text="${r.name()}" th:selected="${r.id() == s.shippingRateId}"></option>
+                    </select>
+                </label>
+                <label>Czas wysyłki
+                    <select name="handlingTime">
+                        <option th:each="h : ${ {'PT0S','PT24H','PT48H','PT72H','PT96H','PT120H','PT168H','PT240H','PT336H','PT504H','PT720H'} }"
+                                th:value="${h}" th:text="${h == 'PT0S'} ? 'natychmiast' : ${h}" th:selected="${h == s.handlingTime}"></option>
+                    </select>
+                </label>
+                <label>Warunki zwrotów
+                    <select name="returnPolicyId">
+                        <option value="">— domyślne —</option>
+                        <option th:each="r : ${dicts.returnPolicies}" th:value="${r.id()}" th:text="${r.name()}" th:selected="${r.id() == s.returnPolicyId}"></option>
+                    </select>
+                </label>
+                <label>Warunki reklamacji
+                    <select name="impliedWarrantyId">
+                        <option value="">— domyślne —</option>
+                        <option th:each="r : ${dicts.impliedWarranties}" th:value="${r.id()}" th:text="${r.name()}" th:selected="${r.id() == s.impliedWarrantyId}"></option>
+                    </select>
+                </label>
+                <label>Gwarancja
+                    <select name="warrantyId">
+                        <option value="">— brak —</option>
+                        <option th:each="r : ${dicts.warranties}" th:value="${r.id()}" th:text="${r.name()}" th:selected="${r.id() == s.warrantyId}"></option>
+                    </select>
+                </label>
+                <label>Faktura
+                    <select name="invoiceType">
+                        <option value="VAT" th:selected="${s.invoiceType == 'VAT'}">Faktura VAT</option>
+                        <option value="VAT_MARGIN" th:selected="${s.invoiceType == 'VAT_MARGIN'}">Faktura VAT marża</option>
+                        <option value="WITHOUT_VAT" th:selected="${s.invoiceType == 'WITHOUT_VAT'}">Faktura bez VAT</option>
+                        <option value="NO_INVOICE" th:selected="${s.invoiceType == 'NO_INVOICE'}">Nie wystawiam faktury</option>
+                    </select>
+                </label>
+                <label>Mnożnik ceny z magazynu
+                    <input name="priceMultiplier" th:value="${s.priceMultiplier}" inputmode="decimal">
+                </label>
+                <label>Dodaj do ceny (zł)
+                    <input name="priceAddition" th:value="${s.priceAddition}" inputmode="decimal">
+                </label>
+            </div>
+            <div class="checks">
+                <label><input type="hidden" name="_publishImmediately" value="on">
+                    <input type="checkbox" name="publishImmediately" th:checked="${s.publishImmediately}"> Aktywuj oferty od razu (inaczej szkice)</label>
+                <label><input type="hidden" name="_autoMatchCategory" value="on">
+                    <input type="checkbox" name="autoMatchCategory" th:checked="${s.autoMatchCategory}"> Dopasuj kategorię automatycznie, gdy produkt jej nie ma</label>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>GPSR (bezpieczeństwo produktów)</h2>
+            <div class="grid">
+                <label>Producent odpowiedzialny
+                    <select name="responsibleProducerId">
+                        <option value="">— nie ustawiaj —</option>
+                        <option th:each="r : ${dicts.responsibleProducers}" th:value="${r.id()}" th:text="${r.name()}" th:selected="${r.id() == s.responsibleProducerId}"></option>
+                    </select>
+                </label>
+                <label>Osoba odpowiedzialna w UE
+                    <select name="responsiblePersonId">
+                        <option value="">— nie ustawiaj —</option>
+                        <option th:each="r : ${dicts.responsiblePersons}" th:value="${r.id()}" th:text="${r.name()}" th:selected="${r.id() == s.responsiblePersonId}"></option>
+                    </select>
+                </label>
+                <label>Informacje o bezpieczeństwie (gdy produkt nie ma własnych)
+                    <select name="safetyMode">
+                        <option th:each="m : ${safetyModes}" th:value="${m}" th:text="${m.label}" th:selected="${m == s.safetyMode}"></option>
+                    </select>
+                </label>
+                <label class="span2">Domyślny tekst informacji o bezpieczeństwie
+                    <textarea name="defaultSafetyText" rows="3" th:text="${s.defaultSafetyText}"></textarea>
+                </label>
+            </div>
+            <p class="muted small">Producentów i osoby odpowiedzialne dodajesz w ustawieniach konta na Allegro, potem kliknij „Odśwież dane z Allegro".</p>
+        </section>
+
+        <section class="card">
+            <h2>Synchronizacja stanów i cen</h2>
+            <p class="muted small">Co 15 minut porównuje oferty powiązane z magazynem i wysyła zmiany komendami grupowymi Allegro.
+                Stany w magazynie zmieniasz ręcznie, importem CSV albo przez API: <code>PUT /api/products/{sku}/stock</code>.</p>
+            <div class="checks">
+                <label><input type="hidden" name="_syncStock" value="on">
+                    <input type="checkbox" name="syncStock" th:checked="${s.syncStock}"> Synchronizuj ilość</label>
+                <label><input type="hidden" name="_syncPrice" value="on">
+                    <input type="checkbox" name="syncPrice" th:checked="${s.syncPrice}"> Synchronizuj cenę (z mnożnikiem)</label>
+                <label><input type="hidden" name="_endWhenZero" value="on">
+                    <input type="checkbox" name="endWhenZero" th:checked="${s.endWhenZero}"> Kończ oferty, gdy stan spadnie do 0</label>
+                <label><input type="hidden" name="_renewWhenAvailable" value="on">
+                    <input type="checkbox" name="renewWhenAvailable" th:checked="${s.renewWhenAvailable}"> Wznawiaj oferty zakończone z braku stanu, gdy towar wróci</label>
+            </div>
+        </section>
+
+        <div class="actions sticky-actions">
+            <button class="btn primary">Zapisz ustawienia</button>
+        </div>
+    </form>
+</main>
+<div th:replace="~{fragments/layout :: catModal}"></div>
+</body>
+</html>

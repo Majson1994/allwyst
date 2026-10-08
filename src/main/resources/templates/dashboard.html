@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Pulpit')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('home')}"></header>
+<main class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <h1>Pulpit</h1>
+
+    <div class="stats">
+        <a class="stat" th:href="@{/accounts}"><span class="num" th:text="${accountCount}">0</span><span>konta Allegro</span></a>
+        <a class="stat" th:href="@{/products}"><span class="num" th:text="${productCount}">0</span><span>produkty w magazynie</span></a>
+        <a class="stat" th:href="@{/offers}"><span class="num" th:text="${activeOffers}">0</span><span>aktywne oferty</span></a>
+        <a class="stat" th:href="@{/listing}"><span class="num" th:text="${pendingItems}">0</span><span>w trakcie wystawiania</span></a>
+        <a class="stat" th:classappend="${errorItems > 0} ? 'stat-err'" th:href="@{/listing}"><span class="num" th:text="${errorItems}">0</span><span>błędy wystawiania</span></a>
+    </div>
+
+    <section class="card" th:if="${accountCount == 0 or productCount == 0}">
+        <h2>Pierwsze kroki</h2>
+        <ol class="steps">
+            <li>Zarejestruj aplikację na <a href="https://apps.developer.allegro.pl" target="_blank" rel="noopener">apps.developer.allegro.pl</a>
+                (albo w sandboxie) i wpisz Client ID / Secret w <code>application.yml</code>.</li>
+            <li>W zakładce <a th:href="@{/accounts}">Konta</a> połącz konto Allegro i ustaw domyślny cennik, zwroty, reklamacje.</li>
+            <li>Dodaj produkty w <a th:href="@{/products}">Magazynie</a> (ręcznie albo importem CSV).</li>
+            <li>Przygotuj <a th:href="@{/templates}">szablon opisu</a> oraz <a th:href="@{/mappings}">powiązania kategorii i reguły parametrów</a>.</li>
+            <li>Zaznacz produkty i kliknij <b>Wystaw zaznaczone</b>.</li>
+        </ol>
+    </section>
+
+    <section class="card">
+        <div class="card-head"><h2>Ostatnie zdarzenia</h2><a th:href="@{/logs}">Wszystkie logi</a></div>
+        <p class="muted" th:if="${recentLogs.isEmpty()}">Brak zdarzeń.</p>
+        <ul class="log-list" th:unless="${recentLogs.isEmpty()}">
+            <li th:each="l : ${recentLogs}" th:classappend="${l.level == 'ERROR'} ? 'err' : (${l.level == 'WARN'} ? 'warn' : '')">
+                <span class="muted small" th:text="${@fmt.dt(l.createdAt)} + ' · ' + ${l.area}"></span>
+                <span th:text="${l.message}"></span>
+            </li>
+        </ul>
+    </section>
+</main>
+</body>
+</html>

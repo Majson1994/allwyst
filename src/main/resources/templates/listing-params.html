@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Parametry')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('listing')}"></header>
+<main class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <div class="page-head">
+        <div>
+            <h1 th:text="'Parametry: ' + ${item.product.name}">Parametry</h1>
+            <p class="muted">
+                Kategoria: <b th:text="${item.categoryName ?: item.categoryId}"></b> ·
+                <span th:text="${data.newProduct} ? 'nowy produkt: wymagane są też parametry produktowe' : 'produkt z katalogu Allegro: parametry produktowe uzupełni katalog'"></span>
+            </p>
+        </div>
+        <a class="btn ghost" th:href="@{/listing/{id}(id=${item.job.id})}">← Wróć do formularza</a>
+    </div>
+    <p class="muted small">Puste pole = wartość automatyczna (reguły, cechy produktu, EAN, producent). Wpisana wartość ma pierwszeństwo.
+        Kilka wartości oddziel znakiem <code>|</code>, zakres wpisz w dwóch polach.</p>
+
+    <form method="post" th:action="@{/listing/item/{id}/parameters(id=${item.id})}">
+        <div class="table-wrap">
+            <table class="table params">
+                <thead><tr><th>Parametr</th><th>Automatycznie</th><th>Twoja wartość</th></tr></thead>
+                <tbody>
+                <tr th:each="e : ${data.resolved.entries}"
+                    th:with="prm=${e.param}, ov=${overrides[e.param.id]}, needed=${e.param.required or (data.newProduct and e.param.requiredForProduct)}"
+                    th:classappend="${needed and !e.resolved} ? 'missing'">
+                    <td>
+                        <b th:text="${prm.name}">Nazwa</b><span class="req" th:if="${needed}"> *</span>
+                        <div class="muted small">
+                            <span th:text="${prm.describesProduct} ? 'produktowy' : 'ofertowy'"></span> ·
+                            <span th:text="${prm.type}"></span><span th:if="${prm.unit}" th:text="' · ' + ${prm.unit}"></span>
+                            <span th:if="${prm.multipleChoices}"> · wielokrotny wybór</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span th:if="${e.overridden}" class="badge">ręcznie</span>
+                        <span th:unless="${e.overridden}" th:text="${e.displayValue}"></span>
+                        <div class="muted small" th:if="${e.source != null and !e.overridden}" th:text="'źródło: ' + ${e.source}"></div>
+                        <div class="warn-text small" th:if="${e.warning}" th:text="${e.warning}"></div>
+                    </td>
+                    <td>
+                        <th:block th:if="${prm.range}">
+                            <span class="range">
+                                <input th:name="|p_${prm.id}_from|" th:value="${ov != null and ov.size() > 0 ? ov[0] : ''}" placeholder="od">
+                                <input th:name="|p_${prm.id}_to|" th:value="${ov != null and ov.size() > 1 ? ov[1] : ''}" placeholder="do">
+                            </span>
+                        </th:block>
+                        <th:block th:if="${!prm.range and prm.dictionary and prm.dictionary.size() <= 300}">
+                            <select th:name="|p_${prm.id}|" th:multiple="${prm.multipleChoices}" th:size="${prm.multipleChoices ? 5 : 1}">
+                                <option value="">— automatycznie —</option>
+                                <option th:each="d : ${prm.dictionary}" th:value="${d.id()}" th:text="${d.value()}"
+                                        th:selected="${ov != null and ov.contains(d.id())}"></option>
+                            </select>
+                        </th:block>
+                        <th:block th:if="${!prm.range and prm.dictionary and prm.dictionary.size() > 300}">
+                            <input th:name="|p_${prm.id}|" th:value="${ov != null and !ov.isEmpty() ? #strings.listJoin(ov, '|') : ''}"
+                                   placeholder="wpisz wartość ze słownika Allegro">
+                        </th:block>
+                        <th:block th:if="${!prm.range and !prm.dictionary}">
+                            <input th:name="|p_${prm.id}|" th:value="${ov != null and !ov.isEmpty() ? #strings.listJoin(ov, '|') : ''}"
+                                   th:placeholder="${e.displayValue}">
+                        </th:block>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="actions sticky-actions">
+            <button class="btn" name="stay" value="1">Zapisz</button>
+            <button class="btn primary">Zapisz i wróć</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

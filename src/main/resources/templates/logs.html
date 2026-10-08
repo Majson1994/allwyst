@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Logi')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('logs')}"></header>
+<main class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <div class="page-head">
+        <h1>Logi</h1>
+        <nav class="tabs">
+            <a th:href="@{/logs}" th:classappend="${area == ''} ? 'active'">Wszystkie</a>
+            <a th:each="a : ${ {'LISTING','OFFERS','SYNC','AUTH'} }" th:href="@{/logs(area=${a})}" th:text="${a}"
+               th:classappend="${area == a} ? 'active'"></a>
+        </nav>
+    </div>
+    <div class="table-wrap">
+        <table class="table">
+            <thead><tr><th>Czas</th><th>Poziom</th><th>Obszar</th><th>Konto</th><th>Zdarzenie</th></tr></thead>
+            <tbody>
+            <tr th:each="l : ${page.content}">
+                <td class="small nowrap" th:text="${@fmt.dt(l.createdAt)}"></td>
+                <td><span class="badge" th:classappend="${l.level == 'ERROR'} ? 'err' : (${l.level == 'WARN'} ? 'warn' : '')" th:text="${l.level}"></span></td>
+                <td class="small" th:text="${l.area}"></td>
+                <td class="small" th:text="${l.accountId}"></td>
+                <td>
+                    <span th:text="${l.message}"></span>
+                    <details th:if="${l.details}"><summary class="small">szczegóły</summary><pre class="json" th:text="${l.details}"></pre></details>
+                </td>
+            </tr>
+            <tr th:if="${page.content.isEmpty()}"><td colspan="5" class="muted">Brak zdarzeń.</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <nav class="pager" th:if="${page.totalPages > 1}">
+        <a class="btn small" th:if="${page.hasPrevious()}" th:href="@{/logs(area=${area},page=${page.number - 1})}">← Nowsze</a>
+        <span class="muted" th:text="'Strona ' + ${page.number + 1} + ' z ' + ${page.totalPages}"></span>
+        <a class="btn small" th:if="${page.hasNext()}" th:href="@{/logs(area=${area},page=${page.number + 1})}">Starsze →</a>
+    </nav>
+</main>
+</body>
+</html>

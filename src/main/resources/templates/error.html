@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Błąd · Allegro Lister</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+</head>
+<body>
+<main class="container">
+    <h1 th:text="'Błąd ' + ${status}">Błąd</h1>
+    <p th:text="${error}">Coś poszło nie tak.</p>
+    <p class="muted" th:if="${message}" th:text="${message}"></p>
+    <p><a class="btn" th:href="@{/}">Wróć na pulpit</a></p>
+</main>
+</body>
+</html>

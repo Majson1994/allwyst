@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Oferty')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('offers')}"></header>
+<main class="container wide">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <div th:if="${noAccounts}">
+        <h1>Oferty</h1>
+        <p class="muted">Najpierw <a th:href="@{/accounts}">połącz konto Allegro</a>.</p>
+    </div>
+
+    <th:block th:unless="${noAccounts}">
+        <div class="page-head">
+            <div>
+                <h1>Oferty <span class="muted" th:text="'(' + ${page.totalElements} + ')'"></span></h1>
+                <p class="muted small" th:if="${syncRunning}">Trwa synchronizacja tego konta…</p>
+            </div>
+            <div class="actions">
+                <form method="post" th:action="@{/offers/import}" class="inline">
+                    <input type="hidden" name="accountId" th:value="${account.id}">
+                    <button class="btn">Importuj / odśwież z Allegro</button>
+                </form>
+                <form method="post" th:action="@{/offers/sync}" class="inline">
+                    <input type="hidden" name="accountId" th:value="${account.id}">
+                    <button class="btn">Synchronizuj stany i ceny</button>
+                </form>
+            </div>
+        </div>
+
+        <form method="get" th:action="@{/offers}" class="filters">
+            <select name="accountId" aria-label="Konto">
+                <option th:each="a : ${allAccounts}" th:value="${a.id}" th:text="${a.displayName}" th:selected="${a.id == account.id}"></option>
+            </select>
+            <select name="status" aria-label="Status">
+                <option value="">Wszystkie statusy</option>
+                <option value="ACTIVE" th:selected="${status == 'ACTIVE'}">Aktywne</option>
+                <option value="ACTIVATING" th:selected="${status == 'ACTIVATING'}">Aktywowane</option>
+                <option value="INACTIVE" th:selected="${status == 'INACTIVE'}">Szkice</option>
+                <option value="ENDED" th:selected="${status == 'ENDED'}">Zakończone</option>
+            </select>
+            <input type="search" name="q" th:value="${q}" placeholder="Tytuł, numer oferty, SKU">
+            <button class="btn">Filtruj</button>
+        </form>
+
+        <div class="alert warn" th:unless="${dicts.errors.isEmpty()}">
+            Nie udało się pobrać części danych z Allegro: <span th:text="${#strings.listJoin(dicts.errors, '; ')}"></span>
+        </div>
+
+        <form method="post" th:action="@{/offers/bulk}" id="offers-form">
+            <input type="hidden" name="accountId" th:value="${account.id}">
+            <section class="card bulk">
+                <div class="bulk-row">
+                    <select name="operation" id="offer-operation" aria-label="Operacja">
+                        <option th:each="o : ${operations}" th:value="${o}" th:text="${o.label}" th:data-needs-value="${o.needsValue}"></option>
+                    </select>
+                    <span class="bulk-input" data-op-for="SET_PRICE CHANGE_PRICE_PERCENT SET_QUANTITY" hidden>
+                        <input name="value" placeholder="wartość" inputmode="decimal">
+                    </span>
+                    <span class="bulk-input" data-op-for="CHANGE_SHIPPING_RATE" hidden>
+                        <select name="shippingRateId">
+                            <option th:each="r : ${dicts.shippingRates}" th:value="${r.id()}" th:text="${r.name()}"></option>
+                        </select>
+                    </span>
+                    <span class="bulk-input" data-op-for="CHANGE_TEMPLATE" hidden>
+                        <select name="templateId">
+                            <option th:each="t : ${templates}" th:value="${t.id}" th:text="${t.name}"></option>
+                        </select>
+                    </span>
+                    <button class="btn primary" data-confirm="Wykonać operację na zaznaczonych ofertach?">Wykonaj na zaznaczonych</button>
+                </div>
+                <div class="bulk-row" th:if="${allAccounts.size() > 1}">
+                    <span class="muted">Wystaw na innym koncie:</span>
+                    <select name="targetAccountId" aria-label="Konto docelowe">
+                        <option th:each="a : ${allAccounts}" th:if="${a.id != account.id}" th:value="${a.id}" th:text="${a.displayName}"></option>
+                    </select>
+                    <button class="btn" th:formaction="@{/offers/copy}">Utwórz formularz wystawiania</button>
+                </div>
+            </section>
+
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th class="w-check"><input type="checkbox" data-check-all="ids" aria-label="Zaznacz wszystkie"></th>
+                        <th></th>
+                        <th>Oferta</th>
+                        <th>Produkt (SKU)</th>
+                        <th class="num">Cena</th>
+                        <th class="num">Ilość</th>
+                        <th class="num">Magazyn</th>
+                        <th>Status</th>
+                        <th>Synchronizacja</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="o : ${page.content}">
+                        <td><input type="checkbox" name="ids" th:value="${o.id}"></td>
+                        <td><img class="thumb" th:if="${o.imageUrl}" th:src="${o.imageUrl}" alt="" loading="lazy"></td>
+                        <td>
+                            <a th:href="${o.offerUrl}" target="_blank" rel="noopener" th:text="${o.name}">tytuł</a>
+                            <div class="muted small">
+                                <span th:text="${o.offerId}"></span>
+                                <span th:if="${o.createdByApp}"> · wystawiona z aplikacji</span>
+                                <span th:if="${o.endedByApp}"> · zakończona z braku stanu</span>
+                            </div>
+                        </td>
+                        <td>
+                            <a th:if="${o.product}" th:href="@{/products/{id}(id=${o.product.id})}" th:text="${o.product.sku}"></a>
+                            <span th:unless="${o.product}" class="muted small" th:text="${o.externalId != null} ? ('brak w magazynie: ' + ${o.externalId}) : 'niepowiązana'"></span>
+                        </td>
+                        <td class="num" th:text="${@fmt.money(o.price)}"></td>
+                        <td class="num" th:text="${o.stock}"></td>
+                        <td class="num" th:text="${o.product != null} ? ${o.product.quantity} : '—'"
+                            th:classappend="${o.product != null and o.product.quantity != o.stock} ? 'warn-text'"></td>
+                        <td><span class="badge" th:classappend="${@fmt.statusClass(o.status)}" th:text="${@fmt.offerStatusLabel(o.status)}"></span></td>
+                        <td class="small muted" th:text="${@fmt.dt(o.lastSyncAt)}"></td>
+                    </tr>
+                    <tr th:if="${page.content.isEmpty()}">
+                        <td colspan="9" class="muted">Brak ofert. Kliknij „Importuj / odśwież z Allegro" albo wystaw produkty z magazynu.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </form>
+
+        <nav class="pager" th:if="${page.totalPages > 1}">
+            <a class="btn small" th:if="${page.hasPrevious()}" th:href="@{/offers(accountId=${account.id},status=${status},q=${q},page=${page.number - 1})}">← Poprzednia</a>
+            <span class="muted" th:text="'Strona ' + ${page.number + 1} + ' z ' + ${page.totalPages}"></span>
+            <a class="btn small" th:if="${page.hasNext()}" th:href="@{/offers(accountId=${account.id},status=${status},q=${q},page=${page.number + 1})}">Następna →</a>
+        </nav>
+    </th:block>
+</main>
+</body>
+</html>

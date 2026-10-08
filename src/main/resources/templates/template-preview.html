@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Podgląd szablonu')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('templates')}"></header>
+<main class="container">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <div class="page-head">
+        <div>
+            <h1 th:text="'Podgląd: ' + ${template.name}">Podgląd</h1>
+            <p class="muted" th:text="'Produkt: ' + ${product.name}"></p>
+        </div>
+        <div class="actions">
+            <form method="get" th:action="@{/templates/{id}/preview(id=${template.id})}" class="inline">
+                <select name="productId" aria-label="Produkt">
+                    <option th:each="p : ${sampleProducts}" th:value="${p.id}" th:text="${@fmt.cut(p.name, 40)}" th:selected="${p.id == product.id}"></option>
+                </select>
+                <button class="btn">Zmień produkt</button>
+            </form>
+            <a class="btn" th:href="@{/templates/{id}(id=${template.id})}">Edytuj szablon</a>
+        </div>
+    </div>
+    <article class="card allegro-desc" th:utext="${previewHtml}"></article>
+</main>
+</body>
+</html>

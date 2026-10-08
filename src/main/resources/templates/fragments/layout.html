@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' · Allegro Lister'">Allegro Lister</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+    <script th:src="@{/app.js}" defer></script>
+</head>
+<body>
+
+<header th:fragment="nav(active)" class="topbar">
+    <a class="brand" th:href="@{/}">Allegro<span>Lister</span></a>
+    <nav class="mainnav">
+        <a th:href="@{/products}" th:classappend="${active == 'products'} ? 'active'">Magazyn</a>
+        <a th:href="@{/listing}" th:classappend="${active == 'listing'} ? 'active'">Wystawianie</a>
+        <a th:href="@{/offers}" th:classappend="${active == 'offers'} ? 'active'">Oferty</a>
+        <a th:href="@{/templates}" th:classappend="${active == 'templates'} ? 'active'">Szablony</a>
+        <a th:href="@{/mappings}" th:classappend="${active == 'mappings'} ? 'active'">Kategorie i parametry</a>
+        <a th:href="@{/accounts}" th:classappend="${active == 'accounts'} ? 'active'">Konta</a>
+        <a th:href="@{/logs}" th:classappend="${active == 'logs'} ? 'active'">Logi</a>
+    </nav>
+</header>
+
+<div th:fragment="flash" class="flash">
+    <div class="alert ok" th:if="${msg}" th:text="${msg}">OK</div>
+    <div class="alert err" th:if="${error}" th:text="${error}">Błąd</div>
+</div>
+
+<div th:fragment="catModal" id="cat-modal" class="modal" hidden>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="cat-modal-title">
+        <div class="modal-head">
+            <strong id="cat-modal-title">Wybierz kategorię Allegro</strong>
+            <button type="button" class="btn ghost" data-close-modal aria-label="Zamknij">✕</button>
+        </div>
+        <div id="cat-breadcrumbs" class="crumbs"></div>
+        <div id="cat-list" class="cat-list"></div>
+        <p class="muted small">Ofertę można wystawić tylko w kategorii najniższego poziomu (oznaczonej ✓).</p>
+    </div>
+</div>
+
+</body>
+</html>
