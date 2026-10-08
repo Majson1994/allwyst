@@ -56,6 +56,22 @@ docker run -p 8080:8080 -v $(pwd)/data:/app/data \
   -e APP_ENCRYPTION_KEY=... -e APP_PASSWORD=haslo allegro-lister
 ```
 
+### Heroku (deploy z GitHuba)
+
+Repozytorium zawiera `system.properties` (Java 21) i `Procfile`, więc Heroku zbuduje je bez dodatkowej konfiguracji.
+
+1. Heroku → New → Create new app (region Europe).
+2. Resources → dodaj **Heroku Postgres** (system plików dyno jest ulotny, więc H2 traci dane przy każdym restarcie).
+   Buildpack Javy sam ustawia `SPRING_DATASOURCE_*`, więc aplikacja połączy się z Postgresem automatycznie.
+3. Settings → Config Vars: `APP_BASE_URL` (adres aplikacji z przycisku *Open app*, bez `/` na końcu),
+   `APP_PASSWORD`, `APP_ENCRYPTION_KEY`, `ALLEGRO_CLIENT_ID` / `ALLEGRO_CLIENT_SECRET`
+   (lub wersje `ALLEGRO_SANDBOX_*`).
+4. W aplikacji Allegro dodaj redirect URI `{APP_BASE_URL}/allegro/callback`.
+5. Deploy → GitHub → połącz repozytorium → Enable Automatic Deploys (gałąź `main`) → Deploy Branch.
+
+Dyno Eco usypia się po 30 min bez ruchu, a wtedy synchronizacja stanów i sprawdzanie statusów wystawiania stoją.
+Do pracy ciągłej użyj dyno Basic.
+
 ### Rejestracja aplikacji w Allegro
 
 1. Wejdź na <https://apps.developer.allegro.pl> (produkcja) albo
